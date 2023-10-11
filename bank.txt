@@ -1,0 +1,112 @@
+#app.py
+from flask import Flask, render_template, request, redirect, url_for
+from pymongo import MongoClient
+app = Flask(__name__)
+client = MongoClient("mongodb://localhost:27017/")
+db = client["banking_system"]
+accounts_collection = db["accounts"]
+@app.route('/')
+def index():
+    return render_template('index.html')
+@app.route('/create_account', methods=['GET', 'POST'])
+def create_account():
+    if request.method == 'POST':
+        account_number = request.form['account_number']
+        account_holder = request.form['account_holder']
+        balance = float(request.form['balance'])
+        accounts_collection.insert_one({"account_number": account_number,
+            "account_holder": account_holder,
+            "balance": balance})
+        return redirect('/view_accounts')
+    return render_template('create_account.html')
+@app.route('/view_accounts')
+def view_accounts():
+    accounts = accounts_collection.find()
+    return render_template('view_accounts.html', accounts=accounts)
+if __name__ == '__main__':
+    app.run(port=80)
+#index.html
+<html>
+<head>
+<title> Banking Management System </title>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+<h1> Welcome to the Banking Management System </h1>
+<ul>
+<li><a href="/create_account"> Create Account </a></li>
+<li><a href="/view_accounts"> View Accounts </a></li>
+</ul>
+</body>
+</html>
+
+#create_account.html
+<html>
+<head>
+    <title>Create Account</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Create a New Account</h1>
+    <form method="POST" action="/create_account">
+        <label for="account_number">Account Number:</label>
+        <input type="text" name="account_number" required><br>
+        <label for="account_holder">Account Holder:</label>
+        <input type="text" name="account_holder" required><br>
+        <label for="balance">Balance:</label>
+        <input type="number" name="balance" required><br>
+        <input type="submit" value="Create Account">
+    </form>
+</body>
+</html>
+
+#view_accounts.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Accounts</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <h1>View Accounts</h1>
+    <ul>
+        {% for account in accounts %}
+            <li>{{ account.account_number }} - {{ account.account_holder }} - ₹{{ account.balance }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
+
+#styles.css
+body {font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;}
+h1 {text-align: center;
+    margin: 20px 0;}
+ul {list-style: none;
+    padding: 0;
+    margin: 0;}
+li {margin: 10px;}
+form {background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    margin: 0 auto;
+    max-width: 400px;}
+label {display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #333;}
+input[type="text"],
+input[type="number"] {width: 95%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;}
+input[type="submit"] {background-color: #333;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;}
+input[type="submit"]:hover {background-color: #555;}
